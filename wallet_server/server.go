@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ahmadexe/GoCoin-Chain/block"
-	"github.com/ahmadexe/GoCoin-Chain/blockchain"
-	"github.com/ahmadexe/GoCoin-Chain/transaction"
-	"github.com/ahmadexe/GoCoin-Chain/utils"
-	"github.com/ahmadexe/GoCoin-Chain/wallet"
+	"github.com/ahmadexe/prism_chain/block"
+	"github.com/ahmadexe/prism_chain/blockchain"
+	"github.com/ahmadexe/prism_chain/transaction"
+	"github.com/ahmadexe/prism_chain/utils"
+	"github.com/ahmadexe/prism_chain/wallet"
 )
 
 type WalletServer struct {

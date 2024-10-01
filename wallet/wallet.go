@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ahmadexe/GoCoin-Chain/utils"
+	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )

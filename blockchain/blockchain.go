@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ahmadexe/GoCoin-Chain/block"
-	"github.com/ahmadexe/GoCoin-Chain/transaction"
-	"github.com/ahmadexe/GoCoin-Chain/utils"
-
 	"sync"
+
+	"github.com/ahmadexe/prism_chain/block"
+	"github.com/ahmadexe/prism_chain/transaction"
+	"github.com/ahmadexe/prism_chain/utils"
 )
 
 type Blockchain struct {

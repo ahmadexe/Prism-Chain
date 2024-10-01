@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ahmadexe/GoCoin-Chain/transaction"
+	"github.com/ahmadexe/prism_chain/transaction"
 )
 
 
