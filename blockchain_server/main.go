@@ -31,7 +31,7 @@ func main() {
 }
 
 func initMining() {
-	url := "http://localhost:10111/mine/start"
+	url := "http://:10111/mine/start"
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalf("Failed to start mining: %v", err)
