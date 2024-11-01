@@ -41,7 +41,7 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		bc := bcs.GetBlockchain()
 		m, _ := json.Marshal(bc)
-		io.WriteString(w, string(m[:]))
+		w.Write(m)
 	default:
 		log.Println("Method not allowed")
 	}
@@ -73,7 +73,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 			Length:       len(bc.TransactionPool),
 		})
 
-		io.WriteString(w, string(m[:]))
+		w.Write(m)
 
 	case http.MethodPost:
 		decoder := json.NewDecoder(r.Body)
@@ -155,7 +155,8 @@ func (bcs *BlockchainServer) Amount(w http.ResponseWriter, r *http.Request) {
 		m, _ := json.Marshal(ar)
 
 		w.Header().Add("Content-Type", "application/json")
-		io.WriteString(w, string(m[:]))
+		w.Write(m)
+
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		log.Println("Method not allowed")
@@ -170,5 +171,5 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/mine/start", bcs.StartMine)
 	http.HandleFunc("/amount", bcs.Amount)
 	
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(bcs.Port())), nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil))
 }

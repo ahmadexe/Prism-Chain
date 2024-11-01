@@ -42,7 +42,7 @@ func (ws *WalletServer) Wallet(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		wlt := wallet.NewWallet()
 		m, _ := wlt.MarshalJSON()
-		io.WriteString(w, string(m))
+		w.Write(m)
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -132,7 +132,7 @@ func (ws *WalletServer) WalletAmount(w http.ResponseWriter, r *http.Request) {
 			}
 			w.Header().Add("Content-Type", "application/json")
 			m, _ := ar.MarshalJSON()
-			io.WriteString(w, string(m))
+			w.Write(m)
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -149,5 +149,5 @@ func (ws *WalletServer) Start() {
 	http.HandleFunc("/transaction", ws.CreateTransaction)
 	http.HandleFunc("/wallet/amount", ws.WalletAmount)
 	log.Printf("Wallet server listening on port %v\n", ws.Port())
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(ws.Port())), nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(int(ws.Port())), nil))
 }
