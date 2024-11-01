@@ -164,12 +164,14 @@ func (bcs *BlockchainServer) Amount(w http.ResponseWriter, r *http.Request) {
 }
 
 func (bcs *BlockchainServer) Run() {
-
-	http.HandleFunc("/", bcs.GetChain)
-	http.HandleFunc("/transactions", bcs.Transactions)
-	http.HandleFunc("/mine", bcs.Mine)
-	http.HandleFunc("/mine/start", bcs.StartMine)
-	http.HandleFunc("/amount", bcs.Amount)
-	
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil))
+		http.HandleFunc("/", bcs.GetChain)
+		http.HandleFunc("/transactions", bcs.Transactions)
+		http.HandleFunc("/mine", bcs.Mine)
+		http.HandleFunc("/mine/start", bcs.StartMine)
+		http.HandleFunc("/amount", bcs.Amount)
+		
+		err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
+		if err != nil {
+			log.Fatalf("Failed to start blockchain server: %v", err)
+		}
 }
