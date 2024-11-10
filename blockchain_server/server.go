@@ -9,6 +9,7 @@ import (
 
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/blockchain"
+	"github.com/ahmadexe/prism_chain/network"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/ahmadexe/prism_chain/wallet"
@@ -23,6 +24,14 @@ var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockc
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 	bc, ok := cache["blockchain"]
 	if !ok {
+		bc = network.SyncNetwork()
+		if bc != nil {
+			cache["blockchain"] = bc
+			log.Println("Synced with the network")
+			return bc
+		}
+
+		// Create a new blockchain, this is the first node, a genesis block is created
 		minersWallet := wallet.NewWallet()
 		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
 		cache["blockchain"] = bc
