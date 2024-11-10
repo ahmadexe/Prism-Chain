@@ -23,15 +23,14 @@ var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockc
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 	bc, ok := cache["blockchain"]
 	if !ok {
-		minersWallter := wallet.NewWallet()
-		bc = blockchain.NewBlockchain(minersWallter.BlockchainAddress, bcs.Port())
+		minersWallet := wallet.NewWallet()
+		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
 		cache["blockchain"] = bc
 
-		// ! Don't log private keys in a real application
 		log.Println("Created a new blockchain")
-		log.Printf("Private key: %v\n", minersWallter.PrivateKey)
-		log.Printf("Public key: %v\n", minersWallter.PrivateKey)
-		log.Printf("Blockchain Address key: %v\n", minersWallter.PrivateKey)
+		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
+		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
+		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
 	}
 	return bc
 }
