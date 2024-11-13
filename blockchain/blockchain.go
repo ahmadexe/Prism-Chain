@@ -170,3 +170,24 @@ func (bc *Blockchain) Print() {
 		fmt.Println(strings.Repeat("-", 53))
 	}
 }
+
+func CompareBlockchains(bc1 *Blockchain, bc2 *Blockchain) bool {
+	if len(bc1.Chain) != len(bc2.Chain) {
+		return false
+	}
+
+	for i := range bc1.Chain {
+		if bc1.Chain[i].Hash() != bc2.Chain[i].Hash() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func GetChainWithMoreProofOfWork(bc1 *Blockchain, bc2 *Blockchain) *Blockchain {
+	if len(bc1.Chain) > len(bc2.Chain) {
+		return bc1
+	}
+	return bc2
+}
