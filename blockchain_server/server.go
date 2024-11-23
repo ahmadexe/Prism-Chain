@@ -22,6 +22,8 @@ type BlockchainServer struct {
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
+	network.ConnectToRelayNetwork()
+
 	bc, ok := cache["blockchain"]
 	if !ok {
 		bc = network.SyncNetwork()
@@ -171,12 +173,29 @@ func (bcs *BlockchainServer) Amount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (bcs *BlockchainServer) GetRandomPeer(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		peer := network.GetRandomPeer()
+		io.WriteString(w, peer)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		log.Println("Method not allowed")
+	}
+}
+
+func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "I'm alive")
+}
+
 func (bcs *BlockchainServer) Run() {
 		http.HandleFunc("/", bcs.GetChain)
 		http.HandleFunc("/transactions", bcs.Transactions)
 		http.HandleFunc("/mine", bcs.Mine)
 		http.HandleFunc("/mine/start", bcs.StartMine)
 		http.HandleFunc("/amount", bcs.Amount)
+		http.HandleFunc("/peer", bcs.GetRandomPeer)
+		http.HandleFunc("/is_alive", bcs.IsAlive)
 		
 		err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 		if err != nil {
