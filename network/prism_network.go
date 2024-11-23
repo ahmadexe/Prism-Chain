@@ -52,12 +52,18 @@ func connectTopeers() {
 			if err != nil {
 				log.Print(err)
 			}
+			
+			ip := string(body)
 
-			if utils.Contains(peers, string(body)) {
+			if ip == IP {
 				continue
 			}
 
-			peers = append(peers, string(body))
+			if utils.Contains(peers, ip) {
+				continue
+			}
+
+			peers = append(peers, ip)
 		}
 	}
 }
@@ -98,3 +104,9 @@ func GetRandomPeer() string {
 	return peers[index]
 }
 
+func GetAllPeers() []string {
+	peersCopy := make([]string, len(peers))
+	copy(peersCopy, peers)
+
+	return peersCopy
+}
