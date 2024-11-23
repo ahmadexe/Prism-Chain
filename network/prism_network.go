@@ -46,6 +46,8 @@ func connectTopeers() {
 			res, err := http.Get("http://" + peers[len(peers)-1] + ":10111" + "/peer")
 			if err != nil {
 				log.Print(err)
+				peers = peers[:len(peers)-1]
+				continue
 			}
 
 			body, err := io.ReadAll(res.Body)
