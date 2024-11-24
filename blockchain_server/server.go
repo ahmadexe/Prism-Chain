@@ -34,6 +34,11 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 
 			cache["blockchain"] = chain
 			log.Println("Synced with the network")
+
+			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
+			log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
+			log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
+
 			return chain
 		}
 
