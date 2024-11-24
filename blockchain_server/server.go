@@ -26,11 +26,15 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 
 	bc, ok := cache["blockchain"]
 	if !ok {
-		bc = network.SyncNetwork()
-		if bc != nil {
-			cache["blockchain"] = bc
+		peerChain := network.SyncNetwork()
+		if peerChain != nil {
+			minersWallet := wallet.NewWallet()
+
+			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
+
+			cache["blockchain"] = chain
 			log.Println("Synced with the network")
-			return bc
+			return chain
 		}
 
 		// Create a new blockchain, this is the first node, a genesis block is created
@@ -189,16 +193,16 @@ func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
 }
 
 func (bcs *BlockchainServer) Run() {
-		http.HandleFunc("/", bcs.GetChain)
-		http.HandleFunc("/transactions", bcs.Transactions)
-		http.HandleFunc("/mine", bcs.Mine)
-		http.HandleFunc("/mine/start", bcs.StartMine)
-		http.HandleFunc("/amount", bcs.Amount)
-		http.HandleFunc("/peer", bcs.GetRandomPeer)
-		http.HandleFunc("/is_alive", bcs.IsAlive)
-		
-		err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
-		if err != nil {
-			log.Fatalf("Failed to start blockchain server: %v", err)
-		}
+	http.HandleFunc("/", bcs.GetChain)
+	http.HandleFunc("/transactions", bcs.Transactions)
+	http.HandleFunc("/mine", bcs.Mine)
+	http.HandleFunc("/mine/start", bcs.StartMine)
+	http.HandleFunc("/amount", bcs.Amount)
+	http.HandleFunc("/peer", bcs.GetRandomPeer)
+	http.HandleFunc("/is_alive", bcs.IsAlive)
+
+	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
+	if err != nil {
+		log.Fatalf("Failed to start blockchain server: %v", err)
+	}
 }

@@ -44,6 +44,16 @@ func (bc *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func BuildBlockchain(transactions []*transaction.Transaction, chain []*block.Block, blockchainAddress string, port uint16) *Blockchain {
+	return &Blockchain{
+		transactions,
+		chain,
+		blockchainAddress,
+		port,
+		sync.Mutex{},
+	}
+}
+
 func NewBlockchain(blockchainAddress string, port uint16) *Blockchain {
 	b := &block.Block{}
 	bc := &Blockchain{
@@ -139,7 +149,7 @@ func (bc *Blockchain) Mining() bool {
 
 func (bc *Blockchain) StartMining() {
 	bc.Mining()
-	_ = time.AfterFunc(time.Second * MINING_TIMER_SEC, bc.StartMining)
+	_ = time.AfterFunc(time.Second*MINING_TIMER_SEC, bc.StartMining)
 }
 
 func (bc *Blockchain) CalculateBalance(address string) float32 {

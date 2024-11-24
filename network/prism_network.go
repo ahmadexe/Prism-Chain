@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -14,18 +13,10 @@ import (
 var peers []string
 var IP string
 
-func SyncNetwork() *blockchain.Blockchain {
-	// TODO: Send request to relay network
+func SyncNetwork() *blockchain.PeerBlockchain {
 	connectTopeers()
-	// TODO: Sync with peers
-	// TODO: Once the longest chain is found, verify the chain
-	// TODO: If verified return the blockchain
-	for _, p := range peers {
-		fmt.Println(p)
-	}
-
-	// Return an empty blockchain for now
-	return nil
+	chain := findTheLongestChain()
+	return chain
 }
 
 func connectTopeers() {
@@ -54,7 +45,7 @@ func connectTopeers() {
 			if err != nil {
 				log.Print(err)
 			}
-			
+
 			ip := string(body)
 
 			if ip == IP {
@@ -93,7 +84,7 @@ func ConnectToRelayNetwork() {
 
 	IP = ip
 
-	res ,err := http.Post("http://3.111.196.231:10011/api/v1/add/" + ip, "application/json", nil)
+	res, err := http.Post("http://3.111.196.231:10011/api/v1/add/"+ip, "application/json", nil)
 	if err != nil {
 		log.Print(err)
 	}
@@ -111,4 +102,48 @@ func GetAllPeers() []string {
 	copy(peersCopy, peers)
 
 	return peersCopy
+}
+
+func findTheLongestChain() *blockchain.PeerBlockchain {
+	var longestChain *blockchain.PeerBlockchain
+
+	for _, p := range peers {
+		res, err := http.Get("http://" + p + ":10111")
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		chain := &blockchain.PeerBlockchain{}
+		chain.UnmarshalJSON(body)
+
+		if longestChain == nil {
+			longestChain = chain
+			continue
+		}
+
+		if len(chain.Chain) > len(longestChain.Chain) {
+			if verifyChain(chain) {
+				longestChain = chain
+			}
+		}
+	}
+
+	return longestChain
+}
+
+func verifyChain(chain *blockchain.PeerBlockchain) bool {
+	for i := 1; i < len(chain.Chain); i++ {
+		if chain.Chain[i].PreviousHash != chain.Chain[i-1].Hash() {
+			return false
+		}
+	}
+
+	return true
 }
