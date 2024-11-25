@@ -27,7 +27,7 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 	var publicKey, privateKey string
 	var option int
 
-	log.Println("Do you want to create a new wallet? (1/0)")
+	log.Println("Press 1 to create a new wallet and 0 to fetch a previous one. (1/0)")
 	_, err := fmt.Scanf("%d", &option)
 	if err != nil {
 		log.Fatalf("Failed to read input: %v", err)
@@ -60,7 +60,7 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 
 			cache["blockchain"] = chain
 			log.Println("Synced with the network")
-
+			fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
 			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
 			log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
 			log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
@@ -73,6 +73,7 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 		cache["blockchain"] = bc
 
 		log.Println("Created a new blockchain")
+		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
 		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
 		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
 		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
