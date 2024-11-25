@@ -23,7 +23,12 @@ type BlockchainServer struct {
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
-	return cache["blockchain"]
+	bc, ok := cache["blockchain"]
+	if !ok {
+		return bcs.InitBlockchain()
+	}
+
+	return bc
 }
 
 func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
