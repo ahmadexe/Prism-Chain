@@ -23,7 +23,7 @@ func SyncNetwork() *blockchain.PeerBlockchain {
 
 func connectTopeers() {
 	var attempts int = 1
-	for len(peers) < 5 {
+	for len(peers) < 2 {
 		attempts++
 
 		if attempts == 10 {
