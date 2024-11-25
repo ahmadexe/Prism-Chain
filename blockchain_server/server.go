@@ -23,6 +23,10 @@ type BlockchainServer struct {
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
+	return cache["blockchain"]
+}
+
+func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 	var minersWallet *wallet.Wallet
 	var publicKey, privateKey string
 	var option int
@@ -178,7 +182,7 @@ func (bcs *BlockchainServer) Mine(w http.ResponseWriter, r *http.Request) {
 func (bcs *BlockchainServer) StartMine(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		bc := bcs.GetBlockchain()
+		bc := bcs.InitBlockchain()
 		bc.StartMining()
 		m := "Mining started"
 		io.WriteString(w, string(m[:]))
