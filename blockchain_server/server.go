@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -22,23 +23,57 @@ type BlockchainServer struct {
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
-	network.ConnectToRelayNetwork()
+	var minersWallet *wallet.Wallet
+	var publicKey, privateKey string
+	var option int
+
+	log.Println("Press 1 to create a new wallet and 0 to fetch a previous one. (1/0)")
+	_, err := fmt.Scanf("%d", &option)
+	if err != nil {
+		log.Fatalf("Failed to read input: %v", err)
+	}
+
+	if option == 1 {
+		minersWallet = wallet.NewWallet()
+	} else {
+		log.Println("Enter the private key")
+		_, err := fmt.Scanf("%s", &privateKey)
+		if err != nil {
+			log.Fatalf("Failed to read input: %v", err)
+		}
+
+		log.Println("Enter the public key")
+		_, err = fmt.Scanf("%s", &publicKey)
+		if err != nil {
+			log.Fatalf("Failed to read input: %v", err)
+		}
+
+		minersWallet = wallet.GenerateWallet(publicKey, privateKey)
+	}
 
 	bc, ok := cache["blockchain"]
+
 	if !ok {
-		bc = network.SyncNetwork()
-		if bc != nil {
-			cache["blockchain"] = bc
+		peerChain := network.SyncNetwork()
+		if peerChain != nil {
+			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
+
+			cache["blockchain"] = chain
 			log.Println("Synced with the network")
-			return bc
+			fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
+			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
+			log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
+			log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
+
+			return chain
 		}
 
 		// Create a new blockchain, this is the first node, a genesis block is created
-		minersWallet := wallet.NewWallet()
 		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
 		cache["blockchain"] = bc
 
 		log.Println("Created a new blockchain")
+		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
 		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
 		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
 		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
@@ -189,16 +224,16 @@ func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
 }
 
 func (bcs *BlockchainServer) Run() {
-		http.HandleFunc("/", bcs.GetChain)
-		http.HandleFunc("/transactions", bcs.Transactions)
-		http.HandleFunc("/mine", bcs.Mine)
-		http.HandleFunc("/mine/start", bcs.StartMine)
-		http.HandleFunc("/amount", bcs.Amount)
-		http.HandleFunc("/peer", bcs.GetRandomPeer)
-		http.HandleFunc("/is_alive", bcs.IsAlive)
-		
-		err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
-		if err != nil {
-			log.Fatalf("Failed to start blockchain server: %v", err)
-		}
+	http.HandleFunc("/", bcs.GetChain)
+	http.HandleFunc("/transactions", bcs.Transactions)
+	http.HandleFunc("/mine", bcs.Mine)
+	http.HandleFunc("/mine/start", bcs.StartMine)
+	http.HandleFunc("/amount", bcs.Amount)
+	http.HandleFunc("/peer", bcs.GetRandomPeer)
+	http.HandleFunc("/is_alive", bcs.IsAlive)
+
+	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
+	if err != nil {
+		log.Fatalf("Failed to start blockchain server: %v", err)
+	}
 }

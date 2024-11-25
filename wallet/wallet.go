@@ -80,6 +80,52 @@ func NewWallet() *Wallet {
 	return w
 }
 
+func GenerateWallet(publicKey string, privateKey string) *Wallet {
+	w := &Wallet{}
+	w.PublicKey = utils.PublicKeyFromString(publicKey)
+	w.PrivateKey = utils.PrivateKeyFromString(privateKey, w.PublicKey)
+
+	// Step 3
+	h2 := sha256.New()
+	h2.Write(w.PublicKey.X.Bytes())
+	h2.Write(w.PublicKey.Y.Bytes())
+	digest2 := h2.Sum(nil)
+
+	// Step 4
+	h3 := ripemd160.New()
+	h3.Write(digest2)
+	digest3 := h3.Sum(nil)
+
+	// Step 5
+	vd4 := make([]byte, 21)
+	vd4[0] = 0x00
+	copy(vd4[1:], digest3)
+
+	// Step 6
+	h5 := sha256.New()
+	h5.Write(vd4)
+	digest5 := h5.Sum(nil)
+
+	// Step 7
+	h6 := sha256.New()
+	h6.Write(digest5)
+	digest6 := h6.Sum(nil)
+
+	// Step 8
+	chksum := digest6[:4]
+
+	// Step 9
+	dc8 := make([]byte, 25)
+	copy(dc8[:21], vd4[:])
+	copy(dc8[21:], chksum[:])
+
+	// Step 10
+	address := base58.Encode(dc8)
+	w.BlockchainAddress = address
+
+	return w
+}
+
 func (w *Wallet) PrivateKeyStr() string {
 	return fmt.Sprintf("%x", w.PrivateKey.D.Bytes())
 }
