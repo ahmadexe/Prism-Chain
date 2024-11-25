@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 
 	"github.com/ahmadexe/prism_chain/blockchain"
 	"github.com/ahmadexe/prism_chain/utils"
@@ -40,15 +41,15 @@ func connectTopeers() {
 				log.Print(err)
 			}
 
-			ip := string(body)
+			ip := strings.Trim(string(body), "\"")
 
 			if ip != IP {
 				peers = append(peers, ip)
 			} 
+
 		} else {
 			res, err := http.Get("http://" + peers[len(peers)-1] + ":10111" + "/peer")
 			if err != nil {
-				log.Print(err)
 				peers = peers[:len(peers)-1]
 				continue
 			}
@@ -85,7 +86,7 @@ func getIP() (string, error) {
 		return "", err
 	}
 
-	return string(ip), nil
+	return strings.Trim(string(ip), "\""), nil
 }
 
 func connectToRelayNetwork() {
