@@ -14,13 +14,21 @@ var peers []string
 var IP string
 
 func SyncNetwork() *blockchain.PeerBlockchain {
+	connectToRelayNetwork()
 	connectTopeers()
 	chain := findTheLongestChain()
 	return chain
 }
 
 func connectTopeers() {
+	var attempts int = 1
 	for len(peers) < 5 {
+		attempts++
+
+		if attempts == 10 {
+			break
+		}
+
 		if len(peers) == 0 {
 			res, err := http.Get("http://3.111.196.231:10011/api/v1/rand/node")
 			if err != nil {
@@ -32,7 +40,11 @@ func connectTopeers() {
 				log.Print(err)
 			}
 
-			peers = append(peers, string(body))
+			ip := string(body)
+
+			if ip != IP {
+				peers = append(peers, ip)
+			} 
 		} else {
 			res, err := http.Get("http://" + peers[len(peers)-1] + ":10111" + "/peer")
 			if err != nil {
@@ -76,7 +88,7 @@ func getIP() (string, error) {
 	return string(ip), nil
 }
 
-func ConnectToRelayNetwork() {
+func connectToRelayNetwork() {
 	ip, err := getIP()
 	if err != nil {
 		log.Print(err)

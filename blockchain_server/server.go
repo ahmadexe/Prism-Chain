@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -22,14 +23,39 @@ type BlockchainServer struct {
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
-	network.ConnectToRelayNetwork()
+	var minersWallet *wallet.Wallet
+	var publicKey, privateKey string
+	var option int
+
+	log.Println("Do you want to create a new wallet? (1/0)")
+	_, err := fmt.Scanf("%d", &option)
+	if err != nil {
+		log.Fatalf("Failed to read input: %v", err)
+	}
+
+	if option == 1 {
+		minersWallet = wallet.NewWallet()
+	} else {
+		log.Println("Enter the private key")
+		_, err := fmt.Scanf("%s", &privateKey)
+		if err != nil {
+			log.Fatalf("Failed to read input: %v", err)
+		}
+
+		log.Println("Enter the public key")
+		_, err = fmt.Scanf("%s", &publicKey)
+		if err != nil {
+			log.Fatalf("Failed to read input: %v", err)
+		}
+
+		minersWallet = wallet.GenerateWallet(publicKey, privateKey)
+	}
 
 	bc, ok := cache["blockchain"]
+
 	if !ok {
 		peerChain := network.SyncNetwork()
 		if peerChain != nil {
-			minersWallet := wallet.NewWallet()
-
 			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
 
 			cache["blockchain"] = chain
@@ -43,7 +69,6 @@ func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 		}
 
 		// Create a new blockchain, this is the first node, a genesis block is created
-		minersWallet := wallet.NewWallet()
 		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
 		cache["blockchain"] = bc
 
