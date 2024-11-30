@@ -156,6 +156,8 @@ func (bc *Blockchain) Mining() bool {
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
 
+	UpdatePeer(bc)
+
 	return true
 }
 

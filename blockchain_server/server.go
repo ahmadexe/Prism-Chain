@@ -10,7 +10,6 @@ import (
 
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/blockchain"
-	"github.com/ahmadexe/prism_chain/network"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/ahmadexe/prism_chain/wallet"
@@ -78,7 +77,7 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 	bc, ok := repo.GetBlockchain()
 
 	if !ok {
-		peerChain := network.SyncNetwork()
+		peerChain := blockchain.SyncNetwork()
 		if peerChain != nil {
 			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
 
@@ -235,7 +234,7 @@ func (bcs *BlockchainServer) Amount(w http.ResponseWriter, r *http.Request) {
 func (bcs *BlockchainServer) GetRandomPeer(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		peer := network.GetRandomPeer()
+		peer := blockchain.GetRandomPeer()
 		io.WriteString(w, peer)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -247,6 +246,42 @@ func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "I'm alive")
 }
 
+func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	case http.MethodPut:
+		bc := bcs.GetBlockchain()
+
+		icomingChain := &blockchain.BlockchainMeta{}
+
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(icomingChain)
+		if err != nil {
+			log.Println("Failed to decode incoming chain")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(icomingChain.Chain) > len(bc.Chain) {
+			bc.Chain = icomingChain.Chain
+			bc.TransactionPool = icomingChain.TransactionPool
+
+			repo := blockchain.GetDatabaseInstance()
+			repo.SaveBlockchain(bc)
+
+			blockchain.UpdatePeer(bc)
+		} else {
+			log.Println("Incoming chain is not longer than the current chain")
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -255,6 +290,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/amount", bcs.Amount)
 	http.HandleFunc("/peer", bcs.GetRandomPeer)
 	http.HandleFunc("/is_alive", bcs.IsAlive)
+	http.HandleFunc("/sync", bcs.SyncChain)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {

@@ -1,4 +1,4 @@
-package network
+package blockchain
 
 import (
 	"io"
@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ahmadexe/prism_chain/blockchain"
 	"github.com/ahmadexe/prism_chain/utils"
 )
 
 var peers []string
 var IP string
 
-func SyncNetwork() *blockchain.BlockchainMeta {
+func SyncNetwork() *BlockchainMeta {
 	connectToRelayNetwork()
 	connectTopeers()
 	chain := findTheLongestChain()
@@ -117,8 +116,8 @@ func GetAllPeers() []string {
 	return peersCopy
 }
 
-func findTheLongestChain() *blockchain.BlockchainMeta {
-	var longestChain *blockchain.BlockchainMeta
+func findTheLongestChain() *BlockchainMeta {
+	var longestChain *BlockchainMeta
 
 	for _, p := range peers {
 		res, err := http.Get("http://" + p + ":10111")
@@ -133,7 +132,7 @@ func findTheLongestChain() *blockchain.BlockchainMeta {
 			continue
 		}
 
-		chain := &blockchain.BlockchainMeta{}
+		chain := &BlockchainMeta{}
 		chain.UnmarshalJSON(body)
 
 		if longestChain == nil {
@@ -151,7 +150,7 @@ func findTheLongestChain() *blockchain.BlockchainMeta {
 	return longestChain
 }
 
-func verifyChain(chain *blockchain.BlockchainMeta) bool {
+func verifyChain(chain *BlockchainMeta) bool {
 	for i := 1; i < len(chain.Chain); i++ {
 		if chain.Chain[i].PreviousHash != chain.Chain[i-1].Hash() {
 			return false
@@ -159,4 +158,22 @@ func verifyChain(chain *blockchain.BlockchainMeta) bool {
 	}
 
 	return true
+}
+
+func UpdatePeer(chain *Blockchain) {
+	chainRaw, err := chain.MarshalJSON()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	for _, p := range peers {
+		res, err := http.Post("http://"+p+":10111/sync", "application/json", strings.NewReader(string(chainRaw)))
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		res.Body.Close()
+	}
 }
