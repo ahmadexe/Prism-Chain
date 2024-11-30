@@ -44,6 +44,16 @@ func (bc *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (bc *Blockchain) UnmarshalJSON(data []byte) error {
+	type Alias Blockchain
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(bc),
+	}
+	return json.Unmarshal(data, &aux)
+}
+
 func BuildBlockchain(transactions []*transaction.Transaction, chain []*block.Block, blockchainAddress string, port uint16) *Blockchain {
 	return &Blockchain{
 		transactions,
@@ -90,8 +100,6 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
-
-	// TODO: Sync Blockchain servers
 
 	return isTransacted
 }
@@ -144,6 +152,10 @@ func (bc *Blockchain) Mining() bool {
 	previousHash := bc.LastBlock().Hash()
 	bc.createBlock(nonce, previousHash)
 	fmt.Println("Mining is successful!")
+
+	repo := GetDatabaseInstance()
+	repo.SaveBlockchain(bc)
+
 	return true
 }
 

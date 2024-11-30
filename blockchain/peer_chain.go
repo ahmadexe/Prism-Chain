@@ -7,13 +7,13 @@ import (
 	"github.com/ahmadexe/prism_chain/transaction"
 )
 
-type PeerBlockchain struct {
-	TransactionPool   []*transaction.Transaction
-	Chain             []*block.Block
+type BlockchainMeta struct {
+	TransactionPool []*transaction.Transaction
+	Chain           []*block.Block
 }
 
-func (chain *PeerBlockchain) UnmarshalJSON(data []byte) error {
-	type Alias PeerBlockchain
+func (chain *BlockchainMeta) UnmarshalJSON(data []byte) error {
+	type Alias BlockchainMeta
 	aux := &struct {
 		*Alias
 	}{
@@ -21,4 +21,3 @@ func (chain *PeerBlockchain) UnmarshalJSON(data []byte) error {
 	}
 	return json.Unmarshal(data, &aux)
 }
-

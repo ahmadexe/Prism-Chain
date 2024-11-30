@@ -2,6 +2,7 @@ package block
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -34,6 +35,35 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 		Transactions: b.Transactions,
 	})
 }
+
+func (b *Block) UnmarshalJSON(data []byte) error {
+	// Define a temporary type with PreviousHash as a string
+	type Alias Block
+	aux := &struct {
+		PreviousHash string `json:"previousHash"`
+		*Alias
+	}{
+		Alias: (*Alias)(b),
+	}
+
+	// Unmarshal into the temporary struct
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Convert PreviousHash from string to [32]uint8
+	bytes, err := hex.DecodeString(aux.PreviousHash)
+	if err != nil {
+		return fmt.Errorf("invalid previousHash: %w", err)
+	}
+	if len(bytes) != 32 {
+		return fmt.Errorf("invalid previousHash length: got %d, expected 32", len(bytes))
+	}
+	copy(b.PreviousHash[:], bytes)
+
+	return nil
+}
+
 
 func (b *Block) Print() {
 	fmt.Printf("Nonce: %d\n", b.Nonce)

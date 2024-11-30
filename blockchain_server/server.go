@@ -22,8 +22,21 @@ type BlockchainServer struct {
 
 var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
 
-func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
+func UpdateCache(meta *blockchain.BlockchainMeta) {
 	bc, ok := cache["blockchain"]
+	if !ok {
+		log.Println("No blockchain found in cache")
+		return
+	}
+
+	if len(meta.Chain) > len(bc.Chain) {
+		cache["blockchain"] = blockchain.BuildBlockchain(meta.TransactionPool, meta.Chain, bc.BlockchainAddress, bc.Port)
+	}
+}
+
+func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
+	repo := blockchain.GetDatabaseInstance()
+	bc, ok := repo.GetBlockchain()
 	if !ok {
 		return bcs.InitBlockchain()
 	}
@@ -60,14 +73,16 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 		minersWallet = wallet.GenerateWallet(publicKey, privateKey)
 	}
 
-	bc, ok := cache["blockchain"]
+	repo := blockchain.GetDatabaseInstance()
+
+	bc, ok := repo.GetBlockchain()
 
 	if !ok {
 		peerChain := network.SyncNetwork()
 		if peerChain != nil {
 			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
 
-			cache["blockchain"] = chain
+			repo.SaveBlockchain(chain)
 			log.Println("Synced with the network")
 			fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
 			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
@@ -79,7 +94,7 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 		// Create a new blockchain, this is the first node, a genesis block is created
 		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
-		cache["blockchain"] = bc
+		repo.SaveBlockchain(bc)
 
 		log.Println("Created a new blockchain")
 		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
