@@ -317,6 +317,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/peer", bcs.GetRandomPeer)
 	http.HandleFunc("/is_alive", bcs.IsAlive)
 	http.HandleFunc("/sync", bcs.SyncChain)
+	http.HandleFunc("/update/mempool", bcs.UpdateMempool)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {
