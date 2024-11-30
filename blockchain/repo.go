@@ -1,13 +1,11 @@
-package repo
+package blockchain
 
 import (
 	"log"
 	"sync"
 
-	"github.com/ahmadexe/prism_chain/blockchain"
 	"github.com/syndtr/goleveldb/leveldb"
 )
-
 
 var (
 	instance *Repository
@@ -18,7 +16,7 @@ type Repository struct {
 	db *leveldb.DB
 }
 
-func Initialize(dbPath string) {
+func InitializeBlockchainDatabase(dbPath string) {
 	once.Do(func() {
 		db, err := leveldb.OpenFile(dbPath, nil)
 		if err != nil {
@@ -28,7 +26,7 @@ func Initialize(dbPath string) {
 	})
 }
 
-func GetInstance() *Repository {
+func GetDatabaseInstance() *Repository {
 	if instance == nil {
 		log.Fatalf("Repository instance is not initialized. Call Initialize() first.")
 	}
@@ -41,13 +39,13 @@ func (r *Repository) Close() {
 	}
 }
 
-func (r *Repository) GetBlockchain() (*blockchain.Blockchain, bool) {
+func (r *Repository) GetBlockchain() (*Blockchain, bool) {
 	chainRaw, err := r.db.Get([]byte("blockchain"), nil)
 	if err != nil {
 		return nil, false
 	}
 
-	chain := &blockchain.Blockchain{}
+	chain := &Blockchain{}
 
 	if err := chain.UnmarshalJSON(chainRaw); err != nil {
 		log.Println("Failed to unmarshal blockchain:", err)
@@ -57,7 +55,7 @@ func (r *Repository) GetBlockchain() (*blockchain.Blockchain, bool) {
 	return chain, true
 }
 
-func (r *Repository) SaveBlockchain(chain *blockchain.Blockchain) {
+func (r *Repository) SaveBlockchain(chain *Blockchain) {
 	chainRaw, err := chain.MarshalJSON()
 	if err != nil {
 		return

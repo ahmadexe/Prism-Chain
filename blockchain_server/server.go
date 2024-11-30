@@ -11,7 +11,6 @@ import (
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/blockchain"
 	"github.com/ahmadexe/prism_chain/network"
-	"github.com/ahmadexe/prism_chain/repo"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/ahmadexe/prism_chain/wallet"
@@ -35,9 +34,8 @@ func UpdateCache(meta *blockchain.BlockchainMeta) {
 	}
 }
 
-
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
-	repo := repo.GetInstance()
+	repo := blockchain.GetDatabaseInstance()
 	bc, ok := repo.GetBlockchain()
 	if !ok {
 		return bcs.InitBlockchain()
@@ -75,7 +73,7 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 		minersWallet = wallet.GenerateWallet(publicKey, privateKey)
 	}
 
-	repo := repo.GetInstance()
+	repo := blockchain.GetDatabaseInstance()
 
 	bc, ok := repo.GetBlockchain()
 

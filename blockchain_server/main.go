@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ahmadexe/prism_chain/repo"
+	"github.com/ahmadexe/prism_chain/blockchain"
 )
 
 func init() {
@@ -28,8 +28,8 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	dbPath := "volume/blockchain"
-    repo.Initialize(dbPath)
-    defer repo.GetInstance().Close()
+    blockchain.InitializeBlockchainDatabase(dbPath)
+    defer blockchain.GetDatabaseInstance().Close()
 
 	initMining()
 

@@ -101,8 +101,6 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
 
-	// TODO: Sync Blockchain servers
-
 	return isTransacted
 }
 
@@ -154,6 +152,9 @@ func (bc *Blockchain) Mining() bool {
 	previousHash := bc.LastBlock().Hash()
 	bc.createBlock(nonce, previousHash)
 	fmt.Println("Mining is successful!")
+
+	repo := GetDatabaseInstance()
+	repo.SaveBlockchain(bc)
 
 	return true
 }
