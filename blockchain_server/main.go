@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/ahmadexe/prism_chain/repo"
 )
 
 func init() {
@@ -24,6 +26,10 @@ func main() {
 
 	go func() { app.Run() }()
 	time.Sleep(2 * time.Second)
+
+	dbPath := "volume/blockchain"
+    repo.Initialize(dbPath)
+    defer repo.GetInstance().Close()
 
 	initMining()
 

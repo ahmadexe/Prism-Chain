@@ -44,6 +44,16 @@ func (bc *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (bc *Blockchain) UnmarshalJSON(data []byte) error {
+	type Alias Blockchain
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(bc),
+	}
+	return json.Unmarshal(data, &aux)
+}
+
 func BuildBlockchain(transactions []*transaction.Transaction, chain []*block.Block, blockchainAddress string, port uint16) *Blockchain {
 	return &Blockchain{
 		transactions,
@@ -144,6 +154,7 @@ func (bc *Blockchain) Mining() bool {
 	previousHash := bc.LastBlock().Hash()
 	bc.createBlock(nonce, previousHash)
 	fmt.Println("Mining is successful!")
+
 	return true
 }
 

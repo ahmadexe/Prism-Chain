@@ -14,7 +14,7 @@ import (
 var peers []string
 var IP string
 
-func SyncNetwork() *blockchain.PeerBlockchain {
+func SyncNetwork() *blockchain.BlockchainMeta {
 	connectToRelayNetwork()
 	connectTopeers()
 	chain := findTheLongestChain()
@@ -45,7 +45,7 @@ func connectTopeers() {
 
 			if ip != IP {
 				peers = append(peers, ip)
-			} 
+			}
 
 		} else {
 			res, err := http.Get("http://" + peers[len(peers)-1] + ":10111" + "/peer")
@@ -117,8 +117,8 @@ func GetAllPeers() []string {
 	return peersCopy
 }
 
-func findTheLongestChain() *blockchain.PeerBlockchain {
-	var longestChain *blockchain.PeerBlockchain
+func findTheLongestChain() *blockchain.BlockchainMeta {
+	var longestChain *blockchain.BlockchainMeta
 
 	for _, p := range peers {
 		res, err := http.Get("http://" + p + ":10111")
@@ -133,7 +133,7 @@ func findTheLongestChain() *blockchain.PeerBlockchain {
 			continue
 		}
 
-		chain := &blockchain.PeerBlockchain{}
+		chain := &blockchain.BlockchainMeta{}
 		chain.UnmarshalJSON(body)
 
 		if longestChain == nil {
@@ -151,7 +151,7 @@ func findTheLongestChain() *blockchain.PeerBlockchain {
 	return longestChain
 }
 
-func verifyChain(chain *blockchain.PeerBlockchain) bool {
+func verifyChain(chain *blockchain.BlockchainMeta) bool {
 	for i := 1; i < len(chain.Chain); i++ {
 		if chain.Chain[i].PreviousHash != chain.Chain[i-1].Hash() {
 			return false
