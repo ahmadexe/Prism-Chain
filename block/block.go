@@ -90,3 +90,27 @@ type TransactionRequest struct {
 func (tr *TransactionRequest) Validate() bool {
 	return tr.SenderPublicKey != nil && tr.SenderChainAddress != nil && tr.Signature != nil && tr.RecepientChainhainAddress != nil && tr.Value != nil
 }
+
+func (tr *TransactionRequest) MarshalJSON() ([]byte, error) {
+	type Alias TransactionRequest
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(tr),
+	})
+}
+
+func (tr *TransactionRequest) UnmarshalJSON(data []byte) error {
+	type Alias TransactionRequest
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(tr),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	return nil
+}

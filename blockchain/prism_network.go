@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/utils"
 )
 
@@ -169,6 +170,24 @@ func UpdatePeer(chain *Blockchain) {
 
 	for _, p := range peers {
 		res, err := http.Post("http://"+p+":10111/sync", "application/json", strings.NewReader(string(chainRaw)))
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		res.Body.Close()
+	}
+}
+
+func UpdatePeersMempool(transaction *block.TransactionRequest) {
+	transactionRaw, err := transaction.MarshalJSON()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	for _, p := range peers {
+		res, err := http.Post("http://"+p+":10111/update/mempool", "application/json", strings.NewReader(string(transactionRaw)))
 		if err != nil {
 			log.Print(err)
 			continue

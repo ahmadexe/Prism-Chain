@@ -46,3 +46,15 @@ func PrivateKeyFromString(str string, publicKey *ecdsa.PublicKey) *ecdsa.Private
 	bi.SetBytes(x)
 	return &ecdsa.PrivateKey{PublicKey: *publicKey, D: &bi}
 }
+
+func PublicKeyToString(publicKey *ecdsa.PublicKey) string {
+	return fmt.Sprintf("%064x%064x", publicKey.X, publicKey.Y)
+}
+
+func PrivateKeyToString(privateKey *ecdsa.PrivateKey) string {
+	return fmt.Sprintf("%x", privateKey.D)
+}
+
+func SignatureToString(signature *Signature) string {
+	return signature.String()
+}

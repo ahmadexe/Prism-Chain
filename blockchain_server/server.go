@@ -169,6 +169,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 		if isCreated {
 			w.WriteHeader(http.StatusCreated)
+
 			log.Println("Transaction created")
 			return
 		}
@@ -274,6 +275,31 @@ func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Println("Incoming chain is not longer than the current chain")
 		}
+
+		w.WriteHeader(http.StatusAccepted)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func (bcs *BlockchainServer) UpdateMempool(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		bc := bcs.GetBlockchain()
+
+		incomingTransaction := &block.TransactionRequest{}
+
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(incomingTransaction)
+		if err != nil {
+			log.Println("Failed to decode incoming transaction")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		bc.AddTransaction(*incomingTransaction.SenderChainAddress, *incomingTransaction.RecepientChainhainAddress, *incomingTransaction.Value, utils.PublicKeyFromString(*incomingTransaction.SenderPublicKey), utils.SignatureFromString(*incomingTransaction.Signature))
 
 		w.WriteHeader(http.StatusAccepted)
 
