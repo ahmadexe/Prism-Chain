@@ -88,6 +88,11 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 
 	transaction := transaction.NewTransaction(senderChainAddress, recipientChainAddress, value)
 
+	usersBalance := bc.CalculateUserBalance(senderChainAddress)
+	if usersBalance < value {
+		return false
+	}
+
 	if senderChainAddress == MINING_SENDER {
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
 		return true
@@ -95,11 +100,30 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
 		return true
 	}
+	
 	return false
 }
 
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
+
+
+	var spk string = utils.PublicKeyToString(senderPublicKey)
+	var sig string = signature.String()
+
+	if isTransacted {
+		transactionReq := &block.TransactionRequest{
+			SenderPublicKey:           &spk,
+			SenderChainAddress:        &senderChainAddress,
+			Signature:                 &sig,
+			RecepientChainhainAddress: &recipientChainAddress,
+			Value:                     &value,
+		}
+
+		UpdatePeersMempool(transactionReq)
+	}
+
+	UpdatePeer(bc)
 
 	return isTransacted
 }
@@ -156,6 +180,8 @@ func (bc *Blockchain) Mining() bool {
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
 
+	UpdatePeer(bc)
+
 	return true
 }
 
@@ -191,4 +217,21 @@ func (bc *Blockchain) Print() {
 		block.Print()
 		fmt.Println(strings.Repeat("-", 53))
 	}
+}
+
+func (bc *Blockchain) CalculateUserBalance(senderChainAddress string) float32 {
+	var total float32 = 0.0
+	for _, b := range bc.Chain {
+		for _, t := range b.Transactions {
+			if senderChainAddress == t.RecipientChainAddress {
+				total += t.Value
+			}
+
+			if senderChainAddress == t.SenderChainAddress {
+				total -= t.Value
+			}
+		}
+	}
+
+	return total
 }

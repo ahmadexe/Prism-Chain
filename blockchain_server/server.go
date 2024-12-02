@@ -10,7 +10,6 @@ import (
 
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/blockchain"
-	"github.com/ahmadexe/prism_chain/network"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/ahmadexe/prism_chain/wallet"
@@ -57,6 +56,10 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 	if option == 1 {
 		minersWallet = wallet.NewWallet()
+		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
+		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
+		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
+		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
 	} else {
 		log.Println("Enter the private key")
 		_, err := fmt.Scanf("%s", &privateKey)
@@ -75,33 +78,20 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 	repo := blockchain.GetDatabaseInstance()
 
-	bc, ok := repo.GetBlockchain()
+	peerChain := blockchain.SyncNetwork()
+	if peerChain != nil {
+		chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
 
-	if !ok {
-		peerChain := network.SyncNetwork()
-		if peerChain != nil {
-			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
+		repo.SaveBlockchain(chain)
+		log.Println("Synced with the network")
 
-			repo.SaveBlockchain(chain)
-			log.Println("Synced with the network")
-			fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
-			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
-			log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
-			log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
-
-			return chain
-		}
-
-		// Create a new blockchain, this is the first node, a genesis block is created
-		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
-		repo.SaveBlockchain(bc)
-
-		log.Println("Created a new blockchain")
-		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
-		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
-		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
-		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
+		return chain
 	}
+
+	// Create a new blockchain, this is the first node, a genesis block is created
+	bc := blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
+	repo.SaveBlockchain(bc)
+
 	return bc
 }
 
@@ -170,6 +160,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 		if isCreated {
 			w.WriteHeader(http.StatusCreated)
+
 			log.Println("Transaction created")
 			return
 		}
@@ -235,7 +226,7 @@ func (bcs *BlockchainServer) Amount(w http.ResponseWriter, r *http.Request) {
 func (bcs *BlockchainServer) GetRandomPeer(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		peer := network.GetRandomPeer()
+		peer := blockchain.GetRandomPeer()
 		io.WriteString(w, peer)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -247,6 +238,67 @@ func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "I'm alive")
 }
 
+func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	case http.MethodPut:
+		bc := bcs.GetBlockchain()
+
+		icomingChain := &blockchain.BlockchainMeta{}
+
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(icomingChain)
+		if err != nil {
+			log.Println("Failed to decode incoming chain")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(icomingChain.Chain) > len(bc.Chain) {
+			bc.Chain = icomingChain.Chain
+			bc.TransactionPool = icomingChain.TransactionPool
+
+			repo := blockchain.GetDatabaseInstance()
+			repo.SaveBlockchain(bc)
+
+			blockchain.UpdatePeer(bc)
+		} else {
+			log.Println("Incoming chain is not longer than the current chain")
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func (bcs *BlockchainServer) UpdateMempool(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		bc := bcs.GetBlockchain()
+
+		incomingTransaction := &block.TransactionRequest{}
+
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(incomingTransaction)
+		if err != nil {
+			log.Println("Failed to decode incoming transaction")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		bc.AddTransaction(*incomingTransaction.SenderChainAddress, *incomingTransaction.RecepientChainhainAddress, *incomingTransaction.Value, utils.PublicKeyFromString(*incomingTransaction.SenderPublicKey), utils.SignatureFromString(*incomingTransaction.Signature))
+
+		w.WriteHeader(http.StatusAccepted)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -255,6 +307,8 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/amount", bcs.Amount)
 	http.HandleFunc("/peer", bcs.GetRandomPeer)
 	http.HandleFunc("/is_alive", bcs.IsAlive)
+	http.HandleFunc("/sync", bcs.SyncChain)
+	http.HandleFunc("/update/mempool", bcs.UpdateMempool)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {
