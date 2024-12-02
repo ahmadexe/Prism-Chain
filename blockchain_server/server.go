@@ -56,6 +56,10 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 	if option == 1 {
 		minersWallet = wallet.NewWallet()
+		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
+		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
+		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
+		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
 	} else {
 		log.Println("Enter the private key")
 		_, err := fmt.Scanf("%s", &privateKey)
@@ -74,33 +78,20 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 	repo := blockchain.GetDatabaseInstance()
 
-	bc, ok := repo.GetBlockchain()
+	peerChain := blockchain.SyncNetwork()
+	if peerChain != nil {
+		chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
 
-	if !ok {
-		peerChain := blockchain.SyncNetwork()
-		if peerChain != nil {
-			chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
+		repo.SaveBlockchain(chain)
+		log.Println("Synced with the network")
 
-			repo.SaveBlockchain(chain)
-			log.Println("Synced with the network")
-			fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
-			log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
-			log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
-			log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
-
-			return chain
-		}
-
-		// Create a new blockchain, this is the first node, a genesis block is created
-		bc = blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
-		repo.SaveBlockchain(bc)
-
-		log.Println("Created a new blockchain")
-		fmt.Println("This is a one time process, you won't see your keys again, copy and save them somewhere safe")
-		log.Printf("Private key: %v\n", minersWallet.PrivateKeyStr())
-		log.Printf("Public key: %v\n", minersWallet.PublicKeyStr())
-		log.Printf("Blockchain Address key: %v\n", minersWallet.BlockchainAddress)
+		return chain
 	}
+
+	// Create a new blockchain, this is the first node, a genesis block is created
+	bc := blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
+	repo.SaveBlockchain(bc)
+
 	return bc
 }
 
