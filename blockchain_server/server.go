@@ -10,6 +10,7 @@ import (
 
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/blockchain"
+	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 	"github.com/ahmadexe/prism_chain/wallet"
@@ -299,6 +300,32 @@ func (bcs *BlockchainServer) UpdateMempool(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+func (bcs *BlockchainServer) UpdateDataPool(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		bc := bcs.GetBlockchain()
+
+		incomingData := &data.UserData{}
+
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(incomingData)
+
+		if err != nil {
+			log.Println("Failed to decode incoming data")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		
+		bc.AddData(incomingData)
+
+		w.WriteHeader(http.StatusAccepted)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -309,6 +336,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/is_alive", bcs.IsAlive)
 	http.HandleFunc("/sync", bcs.SyncChain)
 	http.HandleFunc("/update/mempool", bcs.UpdateMempool)
+	http.HandleFunc("/update/datapool", bcs.UpdateDataPool)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {

@@ -110,8 +110,7 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 	return false
 }
 
-func (bc *Blockchain) AddData(d []string) {
-	userData := &data.UserData{BlockchainAddress: bc.BlockchainAddress, Data: d}
+func (bc *Blockchain) AddData(userData *data.UserData) {
 	bc.DataPool = append(bc.DataPool, userData)
 }
 
