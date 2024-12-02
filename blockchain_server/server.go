@@ -326,9 +326,35 @@ func (bcs *BlockchainServer) UpdateDataPool(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+func (bcs *BlockchainServer) AddData(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		decoder := json.NewDecoder(r.Body)
+		var d data.UserData
+		err := decoder.Decode(&d)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request")
+			return
+		}
+
+		bc := bcs.GetBlockchain()
+		bc.AddData(&d)
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		log.Println("Data added")
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		log.Println("Method not allowed")
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
+	http.HandleFunc("/data", bcs.AddData)
 	http.HandleFunc("/mine", bcs.Mine)
 	http.HandleFunc("/mine/start", bcs.StartMine)
 	http.HandleFunc("/amount", bcs.Amount)

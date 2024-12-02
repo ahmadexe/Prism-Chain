@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ahmadexe/prism_chain/block"
+	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/utils"
 )
 
@@ -188,6 +189,24 @@ func UpdatePeersMempool(transaction *block.TransactionRequest) {
 
 	for _, p := range peers {
 		res, err := http.Post("http://"+p+":10111/update/mempool", "application/json", strings.NewReader(string(transactionRaw)))
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		res.Body.Close()
+	}
+}
+
+func UpdatePeersDatapool (data *data.UserData) {
+	dataRaw, err := data.MarshalJSON()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	for _, p := range peers {
+		res, err := http.Post("http://"+p+":10111/update/datapool", "application/json", strings.NewReader(string(dataRaw)))
 		if err != nil {
 			log.Print(err)
 			continue

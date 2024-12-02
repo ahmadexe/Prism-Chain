@@ -86,6 +86,7 @@ func NewBlockchain(blockchainAddress string, port uint16) *Blockchain {
 func (bc *Blockchain) createBlock(nonce int, previousHash [32]byte) *block.Block {
 	block := block.NewBlock(nonce, previousHash, bc.TransactionPool, bc.DataPool)
 	bc.Chain = append(bc.Chain, block)
+	bc.DataPool = []*data.UserData{}
 	bc.TransactionPool = []*transaction.Transaction{}
 	return block
 }
@@ -107,11 +108,18 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 		return true
 	}
 
+	repo := GetDatabaseInstance()
+	repo.SaveBlockchain(bc)
+
 	return false
 }
 
 func (bc *Blockchain) AddData(userData *data.UserData) {
 	bc.DataPool = append(bc.DataPool, userData)
+	repo := GetDatabaseInstance()
+	repo.SaveBlockchain(bc)
+
+	UpdatePeersDatapool(userData)
 }
 
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
@@ -132,7 +140,7 @@ func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChai
 		UpdatePeersMempool(transactionReq)
 	}
 
-	UpdatePeer(bc)
+	// UpdatePeer(bc)
 
 	return isTransacted
 }
