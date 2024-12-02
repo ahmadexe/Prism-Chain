@@ -7,32 +7,35 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/transaction"
 )
-
 
 type Block struct {
 	TimeStamp    int64
 	Nonce        int
 	PreviousHash [32]byte
 	Transactions []*transaction.Transaction
+	Data         []*data.UserData
 }
 
-func NewBlock(nonce int, previousHash [32]byte, transactions []*transaction.Transaction) *Block {
-	return &Block{Nonce: nonce, PreviousHash: previousHash, Transactions: transactions, TimeStamp: time.Now().UnixNano()}
+func NewBlock(nonce int, previousHash [32]byte, transactions []*transaction.Transaction, data []*data.UserData) *Block {
+	return &Block{Nonce: nonce, PreviousHash: previousHash, Transactions: transactions, TimeStamp: time.Now().UnixNano(), Data: data}
 }
 
 func (b *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		TimeStamp    int64                      `json:"timeStamp"`
 		Nonce        int                        `json:"nonce"`
-		PreviousHash string                   `json:"previousHash"`
+		PreviousHash string                     `json:"previousHash"`
 		Transactions []*transaction.Transaction `json:"transactions"`
+		Data         []*data.UserData           `json:"data"`
 	}{
 		TimeStamp:    b.TimeStamp,
 		Nonce:        b.Nonce,
-		PreviousHash: fmt.Sprintf("%x",b.PreviousHash),
+		PreviousHash: fmt.Sprintf("%x", b.PreviousHash),
 		Transactions: b.Transactions,
+		Data:         b.Data,
 	})
 }
 
@@ -63,7 +66,6 @@ func (b *Block) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
 
 func (b *Block) Print() {
 	fmt.Printf("Nonce: %d\n", b.Nonce)

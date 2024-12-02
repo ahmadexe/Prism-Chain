@@ -29,7 +29,7 @@ func UpdateCache(meta *blockchain.BlockchainMeta) {
 	}
 
 	if len(meta.Chain) > len(bc.Chain) {
-		cache["blockchain"] = blockchain.BuildBlockchain(meta.TransactionPool, meta.Chain, bc.BlockchainAddress, bc.Port)
+		cache["blockchain"] = blockchain.BuildBlockchain(meta.TransactionPool, meta.Chain, bc.DataPool, bc.BlockchainAddress, bc.Port)
 	}
 }
 
@@ -80,7 +80,7 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 
 	peerChain := blockchain.SyncNetwork()
 	if peerChain != nil {
-		chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, minersWallet.BlockchainAddress, bcs.Port())
+		chain := blockchain.BuildBlockchain(peerChain.TransactionPool, peerChain.Chain, peerChain.Data, minersWallet.BlockchainAddress, bcs.Port())
 
 		repo.SaveBlockchain(chain)
 		log.Println("Synced with the network")

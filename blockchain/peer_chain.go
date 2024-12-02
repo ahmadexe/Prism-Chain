@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 
 	"github.com/ahmadexe/prism_chain/block"
+	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/transaction"
 )
 
 type BlockchainMeta struct {
 	TransactionPool []*transaction.Transaction
+	Data            []*data.UserData
 	Chain           []*block.Block
 }
 

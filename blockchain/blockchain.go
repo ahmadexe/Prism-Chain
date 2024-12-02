@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/ahmadexe/prism_chain/block"
+	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/transaction"
 	"github.com/ahmadexe/prism_chain/utils"
 )
@@ -18,6 +19,7 @@ import (
 type Blockchain struct {
 	TransactionPool   []*transaction.Transaction
 	Chain             []*block.Block
+	DataPool          []*data.UserData
 	BlockchainAddress string
 	Port              uint16
 	mutex             sync.Mutex
@@ -26,7 +28,7 @@ type Blockchain struct {
 const (
 	MINING_DIFFICULTY = 3
 	MINING_REWARD     = 1.0
-	MINING_SENDER     = "THE BLOCKCHAIN"
+	MINING_SENDER     = "PRISM CHAIN"
 	MINING_TIMER_SEC  = 20
 )
 
@@ -34,11 +36,13 @@ func (bc *Blockchain) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		TransactionPool   []*transaction.Transaction `json:"transactionPool"`
 		Chain             []*block.Block             `json:"chain"`
+		DataPool          []*data.UserData           `json:"dataPool"`
 		BlockchainAddress string                     `json:"blockchainAddress"`
 		Port              uint16                     `json:"port"`
 	}{
 		TransactionPool:   bc.TransactionPool,
 		Chain:             bc.Chain,
+		DataPool:          bc.DataPool,
 		BlockchainAddress: bc.BlockchainAddress,
 		Port:              bc.Port,
 	})
@@ -54,10 +58,11 @@ func (bc *Blockchain) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &aux)
 }
 
-func BuildBlockchain(transactions []*transaction.Transaction, chain []*block.Block, blockchainAddress string, port uint16) *Blockchain {
+func BuildBlockchain(transactions []*transaction.Transaction, chain []*block.Block, data []*data.UserData, blockchainAddress string, port uint16) *Blockchain {
 	return &Blockchain{
 		transactions,
 		chain,
+		data,
 		blockchainAddress,
 		port,
 		sync.Mutex{},
@@ -69,6 +74,7 @@ func NewBlockchain(blockchainAddress string, port uint16) *Blockchain {
 	bc := &Blockchain{
 		[]*transaction.Transaction{},
 		[]*block.Block{},
+		[]*data.UserData{},
 		blockchainAddress,
 		port,
 		sync.Mutex{},
@@ -78,7 +84,7 @@ func NewBlockchain(blockchainAddress string, port uint16) *Blockchain {
 }
 
 func (bc *Blockchain) createBlock(nonce int, previousHash [32]byte) *block.Block {
-	block := block.NewBlock(nonce, previousHash, bc.TransactionPool)
+	block := block.NewBlock(nonce, previousHash, bc.TransactionPool, bc.DataPool)
 	bc.Chain = append(bc.Chain, block)
 	bc.TransactionPool = []*transaction.Transaction{}
 	return block
@@ -100,13 +106,17 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
 		return true
 	}
-	
+
 	return false
+}
+
+func (bc *Blockchain) AddData(d []string) {
+	userData := &data.UserData{BlockchainAddress: bc.BlockchainAddress, Data: d}
+	bc.DataPool = append(bc.DataPool, userData)
 }
 
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
-
 
 	var spk string = utils.PublicKeyToString(senderPublicKey)
 	var sig string = signature.String()
