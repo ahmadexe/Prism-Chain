@@ -177,7 +177,6 @@ func (bc *Blockchain) ProofOfWork() int {
 }
 
 func (bc *Blockchain) Mining() bool {
-	fmt.Println("MINING")
 	fmt.Println(&bc)
 
 	bc.mutex.Lock()
@@ -195,15 +194,10 @@ func (bc *Blockchain) Mining() bool {
 
 	bc.createBlock(nonce, previousHash)
 
-	fmt.Println("Mining is successful!")
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
 
-	fmt.Println("REACHED NOT")
-
 	UpdatePeer(bc)
-
-	fmt.Println("REACHED")
 
 	return true
 }
