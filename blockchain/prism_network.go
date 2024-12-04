@@ -28,11 +28,15 @@ func SyncNetwork() *BlockchainMeta {
 }
 
 func connectTopeers() {
+	if len(peers) >= 3 {
+		return
+	}
+
 	var attempts int = 1
-	for len(peers) < 2 {
+	for len(peers) < 3 {
 		attempts++
 
-		if attempts == 100 {
+		if attempts == 10 {
 			break
 		}
 
@@ -201,6 +205,7 @@ func UPDATE() {
 	bc, _ := repo.GetBlockchain()
 
 	UpdatePeer(bc)
+	connectTopeers()
 
 	time.AfterFunc(10*time.Second, UPDATE)
 } 
