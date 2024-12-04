@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ahmadexe/prism_chain/block"
 	"github.com/ahmadexe/prism_chain/data"
@@ -193,3 +194,13 @@ func UpdatePeersDatapool(data *data.UserData) {
 		res.Body.Close()
 	}
 }
+
+func UPDATE() {
+	fmt.Println("Updating peers")
+	repo := GetDatabaseInstance()
+	bc, _ := repo.GetBlockchain()
+
+	UpdatePeer(bc)
+
+	time.AfterFunc(10*time.Second, UPDATE)
+} 

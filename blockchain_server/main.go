@@ -32,6 +32,7 @@ func main() {
     defer blockchain.GetDatabaseInstance().Close()
 
 	initMining()
+	blockchain.UPDATE()
 
 	wg.Wait()
 }

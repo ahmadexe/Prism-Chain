@@ -122,16 +122,29 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 	case http.MethodPost:
 		decoder := json.NewDecoder(r.Body)
+		fmt.Println("H1")
 		var t block.TransactionRequest
+		fmt.Println("H2")
+
 		err := decoder.Decode(&t)
+		fmt.Println("H3")
+
 		if err != nil {
+		fmt.Println("H4")
+
 			w.WriteHeader(http.StatusBadRequest)
+		fmt.Println("H5")
+		fmt.Println(err)
+
 			log.Println("Bad Request")
 			return
 		}
 		if !t.Validate() {
+		fmt.Println("H6")
+
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println("Bad Request")
+
 			return
 		}
 
@@ -148,10 +161,12 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusCreated)
 
 			log.Println("Transaction created")
-			return
+		} else {
+			fmt.Println("FAILS HERE")
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request")
 		}
-		w.WriteHeader(http.StatusBadRequest)
-		log.Println("Bad Request")
+		
 	}
 }
 
