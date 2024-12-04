@@ -27,7 +27,7 @@ type Blockchain struct {
 
 const (
 	MINING_DIFFICULTY = 3
-	MINING_REWARD     = 1.0
+	MINING_REWARD     = 10
 	MINING_SENDER     = "PRISM CHAIN"
 	MINING_TIMER_SEC  = 20
 )
@@ -140,8 +140,6 @@ func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChai
 		UpdatePeersMempool(transactionReq)
 	}
 
-	// UpdatePeer(bc)
-
 	return isTransacted
 }
 
@@ -252,3 +250,4 @@ func (bc *Blockchain) CalculateUserBalance(senderChainAddress string) float32 {
 
 	return total
 }
+
