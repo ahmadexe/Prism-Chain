@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -19,6 +20,9 @@ func SyncNetwork() *BlockchainMeta {
 	connectToRelayNetwork()
 	connectTopeers()
 	chain := findTheLongestChain()
+	fmt.Println("Synced with the network")
+	fmt.Println("Peers: ", peers)
+	fmt.Println("Blockchain: ", chain)
 	return chain
 }
 
@@ -27,51 +31,25 @@ func connectTopeers() {
 	for len(peers) < 2 {
 		attempts++
 
-		if attempts == 10 {
+		if attempts == 100 {
 			break
 		}
 
-		if len(peers) == 0 {
-			res, err := http.Get("http://3.111.196.231:10011/api/v1/rand/node")
-			if err != nil {
-				log.Print(err)
-			}
-
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				log.Print(err)
-			}
-
-			ip := strings.Trim(string(body), "\"")
-
-			if ip != IP {
-				peers = append(peers, ip)
-			}
-
-		} else {
-			res, err := http.Get("http://" + peers[len(peers)-1] + ":10111" + "/peer")
-			if err != nil {
-				peers = peers[:len(peers)-1]
-				continue
-			}
-
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				log.Print(err)
-			}
-
-			ip := string(body)
-
-			if ip == IP {
-				continue
-			}
-
-			if utils.Contains(peers, ip) {
-				continue
-			}
-
-			peers = append(peers, ip)
+		res, err := http.Get("http://0.0.0.0:10011/api/v1/rand/node")
+		if err != nil {
+			log.Print(err)
 		}
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			log.Print(err)
+		}
+
+		ip := strings.Trim(string(body), "\"")
+
+		if ip != IP && !utils.Contains(peers, ip) {
+			peers = append(peers, ip)
+		} 
 	}
 }
 
@@ -98,7 +76,7 @@ func connectToRelayNetwork() {
 
 	IP = ip
 
-	res, err := http.Post("http://3.111.196.231:10011/api/v1/add/"+ip, "application/json", nil)
+	res, err := http.Post("http://0.0.0.0:10011/api/v1/add/"+ip, "application/json", nil)
 	if err != nil {
 		log.Print(err)
 	}
@@ -198,7 +176,7 @@ func UpdatePeersMempool(transaction *block.TransactionRequest) {
 	}
 }
 
-func UpdatePeersDatapool (data *data.UserData) {
+func UpdatePeersDatapool(data *data.UserData) {
 	dataRaw, err := data.MarshalJSON()
 	if err != nil {
 		log.Print(err)

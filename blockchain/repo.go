@@ -9,6 +9,7 @@ import (
 
 var (
 	instance *Repository
+	cachedChain *Blockchain
 	once     sync.Once
 )
 
@@ -40,6 +41,10 @@ func (r *Repository) Close() {
 }
 
 func (r *Repository) GetBlockchain() (*Blockchain, bool) {
+	if cachedChain != nil {
+		return cachedChain, true
+	}
+
 	chainRaw, err := r.db.Get([]byte("blockchain"), nil)
 	if err != nil {
 		return nil, false
@@ -59,6 +64,14 @@ func (r *Repository) SaveBlockchain(chain *Blockchain) {
 	chainRaw, err := chain.MarshalJSON()
 	if err != nil {
 		return
+	}
+
+	if cachedChain == nil {
+		cachedChain = chain
+	} else {
+		cachedChain.Chain = chain.Chain
+		cachedChain.TransactionPool = chain.TransactionPool
+		cachedChain.DataPool = chain.DataPool
 	}
 
 	r.db.Put([]byte("blockchain"), chainRaw, nil)
