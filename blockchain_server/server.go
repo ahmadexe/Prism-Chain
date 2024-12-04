@@ -243,7 +243,7 @@ func (bcs *BlockchainServer) IsAlive(w http.ResponseWriter, r *http.Request) {
 func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
-	case http.MethodPut:
+	case http.MethodPost:
 		bc := bcs.GetBlockchain()
 
 		icomingChain := &blockchain.BlockchainMeta{}
@@ -260,6 +260,7 @@ func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
 		if len(icomingChain.Chain) > len(bc.Chain) {
 			bc.Chain = icomingChain.Chain
 			bc.TransactionPool = icomingChain.TransactionPool
+			bc.DataPool = icomingChain.Data
 
 			repo := blockchain.GetDatabaseInstance()
 			repo.SaveBlockchain(bc)
