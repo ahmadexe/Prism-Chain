@@ -35,7 +35,7 @@ func connectTopeers() {
 			break
 		}
 
-		res, err := http.Get("http://3.111.196.231:10011/api/v1/rand/node")
+		res, err := http.Get("http://0.0.0.0:10011/api/v1/rand/node")
 		if err != nil {
 			log.Print(err)
 		}
@@ -76,7 +76,7 @@ func connectToRelayNetwork() {
 
 	IP = ip
 
-	res, err := http.Post("http://3.111.196.231:10011/api/v1/add/"+ip, "application/json", nil)
+	res, err := http.Post("http://0.0.0.0:10011/api/v1/add/"+ip, "application/json", nil)
 	if err != nil {
 		log.Print(err)
 	}

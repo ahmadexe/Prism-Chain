@@ -20,31 +20,19 @@ type BlockchainServer struct {
 	port uint16
 }
 
-var cache map[string]*blockchain.Blockchain = make(map[string]*blockchain.Blockchain)
-
-func UpdateCache(meta *blockchain.BlockchainMeta) {
-	bc, ok := cache["blockchain"]
-	if !ok {
-		log.Println("No blockchain found in cache")
-		return
-	}
-
-	if len(meta.Chain) > len(bc.Chain) {
-		cache["blockchain"] = blockchain.BuildBlockchain(meta.TransactionPool, meta.Chain, bc.DataPool, bc.BlockchainAddress, bc.Port)
-	}
-}
-
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 	repo := blockchain.GetDatabaseInstance()
 	bc, ok := repo.GetBlockchain()
 	if !ok {
-		return bcs.InitBlockchain()
+		bcs.InitBlockchain()
+		bc, _ = repo.GetBlockchain()
+		return bc
 	}
 
 	return bc
 }
 
-func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
+func (bcs *BlockchainServer) InitBlockchain() {
 	var minersWallet *wallet.Wallet
 	var publicKey, privateKey string
 	var option int
@@ -86,14 +74,11 @@ func (bcs *BlockchainServer) InitBlockchain() *blockchain.Blockchain {
 		repo.SaveBlockchain(chain)
 		log.Println("Synced with the network")
 
-		return chain
 	}
 
 	// Create a new blockchain, this is the first node, a genesis block is created
 	bc := blockchain.NewBlockchain(minersWallet.BlockchainAddress, bcs.Port())
 	repo.SaveBlockchain(bc)
-
-	return bc
 }
 
 func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +179,8 @@ func (bcs *BlockchainServer) Mine(w http.ResponseWriter, r *http.Request) {
 func (bcs *BlockchainServer) StartMine(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		bc := bcs.InitBlockchain()
+		bcs.InitBlockchain()
+		bc := bcs.GetBlockchain()
 		bc.StartMining()
 		m := "Mining started"
 		io.WriteString(w, string(m[:]))
@@ -316,7 +302,7 @@ func (bcs *BlockchainServer) UpdateDataPool(w http.ResponseWriter, r *http.Reque
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		
+
 		bc.AddData(incomingData)
 
 		w.WriteHeader(http.StatusAccepted)
@@ -351,6 +337,26 @@ func (bcs *BlockchainServer) AddData(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (bcs *BlockchainServer) Join(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		address := r.URL.Query().Get("address")
+
+		if address == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		bc := bcs.GetBlockchain()
+		bc.DepositJoiningFee(address)
+
+		w.WriteHeader(http.StatusCreated)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -363,6 +369,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/sync", bcs.SyncChain)
 	http.HandleFunc("/update/mempool", bcs.UpdateMempool)
 	http.HandleFunc("/update/datapool", bcs.UpdateDataPool)
+	http.HandleFunc("/join/", bcs.Join)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {

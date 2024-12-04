@@ -27,7 +27,7 @@ type Blockchain struct {
 
 const (
 	MINING_DIFFICULTY = 3
-	MINING_REWARD     = 10
+	MINING_REWARD     = 50
 	MINING_SENDER     = "PRISM CHAIN"
 	MINING_TIMER_SEC  = 20
 )
@@ -96,20 +96,18 @@ func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAd
 	transaction := transaction.NewTransaction(senderChainAddress, recipientChainAddress, value)
 
 	usersBalance := bc.CalculateUserBalance(senderChainAddress)
-	if usersBalance < value {
-		return false
-	}
+	repo := GetDatabaseInstance()
 
 	if senderChainAddress == MINING_SENDER {
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
+
+		repo.SaveBlockchain(bc)
 		return true
-	} else if bc.verifyTransaction(senderPublicKey, signature, transaction) {
+	} else if bc.verifyTransaction(senderPublicKey, signature, transaction) && usersBalance >= value {
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
+		repo.SaveBlockchain(bc)
 		return true
 	}
-
-	repo := GetDatabaseInstance()
-	repo.SaveBlockchain(bc)
 
 	return false
 }
@@ -179,23 +177,33 @@ func (bc *Blockchain) ProofOfWork() int {
 }
 
 func (bc *Blockchain) Mining() bool {
+	fmt.Println("MINING")
+	fmt.Println(&bc)
+
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
-
+	fmt.Println(len(bc.TransactionPool))
 	if len(bc.TransactionPool) == 0 {
 		return false
 	}
 
 	bc.AddTransaction(MINING_SENDER, bc.BlockchainAddress, MINING_REWARD, nil, nil)
-	nonce := bc.ProofOfWork()
-	previousHash := bc.LastBlock().Hash()
-	bc.createBlock(nonce, previousHash)
-	fmt.Println("Mining is successful!")
 
+	nonce := bc.ProofOfWork()
+
+	previousHash := bc.LastBlock().Hash()
+
+	bc.createBlock(nonce, previousHash)
+
+	fmt.Println("Mining is successful!")
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
 
+	fmt.Println("REACHED NOT")
+
 	UpdatePeer(bc)
+
+	fmt.Println("REACHED")
 
 	return true
 }
@@ -251,3 +259,14 @@ func (bc *Blockchain) CalculateUserBalance(senderChainAddress string) float32 {
 	return total
 }
 
+func (bc *Blockchain) DepositJoiningFee(userAddress string) {
+	for _, b := range bc.Chain {
+		for _, t := range b.Transactions {
+			if t.SenderChainAddress == MINING_SENDER && t.Value == 10 && t.RecipientChainAddress == userAddress {
+				return
+			}
+		}
+	}
+
+	bc.AddTransaction(MINING_SENDER, userAddress, 10, nil, nil)
+}
