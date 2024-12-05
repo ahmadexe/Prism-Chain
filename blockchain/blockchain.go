@@ -121,22 +121,6 @@ func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChai
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
 
 
-
-	// var spk string = utils.PublicKeyToString(senderPublicKey)
-	// var sig string = signature.String()
-
-	// if isTransacted {
-	// 	transactionReq := &block.TransactionRequest{
-	// 		SenderPublicKey:           &spk,
-	// 		SenderChainAddress:        &senderChainAddress,
-	// 		Signature:                 &sig,
-	// 		RecepientChainAddress: &recipientChainAddress,
-	// 		Value:                     &value,
-	// 	}
-
-	// 	UpdatePeersMempool(transactionReq)
-	// }
-
 	return isTransacted
 }
 
