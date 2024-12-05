@@ -74,6 +74,7 @@ func (bcs *BlockchainServer) InitBlockchain() {
 		repo.SaveBlockchain(chain)
 		log.Println("Synced with the network")
 
+		return
 	}
 
 	// Create a new blockchain, this is the first node, a genesis block is created
@@ -122,26 +123,16 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 	case http.MethodPost:
 		decoder := json.NewDecoder(r.Body)
-		fmt.Println("H1")
 		var t block.TransactionRequest
-		fmt.Println("H2")
 
 		err := decoder.Decode(&t)
-		fmt.Println("H3")
 
 		if err != nil {
-		fmt.Println("H4")
-
 			w.WriteHeader(http.StatusBadRequest)
-		fmt.Println("H5")
-		fmt.Println(err)
-
-			log.Println("Bad Request")
+			fmt.Println(err)
 			return
 		}
 		if !t.Validate() {
-		fmt.Println("H6")
-
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println("Bad Request")
 
@@ -153,20 +144,17 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 		bc := bcs.GetBlockchain()
 
-		isCreated := bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainhainAddress, *t.Value, publicKey, signature)
+		isCreated := bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, *t.Value, publicKey, signature)
 
 		w.Header().Add("Content-Type", "application/json")
 
 		if isCreated {
 			w.WriteHeader(http.StatusCreated)
-
 			log.Println("Transaction created")
-		} else {
-			fmt.Println("FAILS HERE")
-			w.WriteHeader(http.StatusBadRequest)
-			log.Println("Bad Request")
+			return
 		}
-		
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("Bad Request")
 	}
 }
 
@@ -264,8 +252,6 @@ func (bcs *BlockchainServer) SyncChain(w http.ResponseWriter, r *http.Request) {
 
 			repo := blockchain.GetDatabaseInstance()
 			repo.SaveBlockchain(bc)
-
-			blockchain.UpdatePeer(bc)
 		} else {
 			log.Println("Incoming chain is not longer than the current chain")
 		}
@@ -293,7 +279,7 @@ func (bcs *BlockchainServer) UpdateMempool(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		bc.AddTransaction(*incomingTransaction.SenderChainAddress, *incomingTransaction.RecepientChainhainAddress, *incomingTransaction.Value, utils.PublicKeyFromString(*incomingTransaction.SenderPublicKey), utils.SignatureFromString(*incomingTransaction.Signature))
+		bc.AddTransaction(*incomingTransaction.SenderChainAddress, *incomingTransaction.RecepientChainAddress, *incomingTransaction.Value, utils.PublicKeyFromString(*incomingTransaction.SenderPublicKey), utils.SignatureFromString(*incomingTransaction.Signature))
 
 		w.WriteHeader(http.StatusAccepted)
 

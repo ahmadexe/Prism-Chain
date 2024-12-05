@@ -82,15 +82,15 @@ func (b *Block) Hash() [32]byte {
 }
 
 type TransactionRequest struct {
-	SenderPublicKey           *string  `json:"senderPublicKey"`
-	SenderChainAddress        *string  `json:"senderChainAddress"`
-	Signature                 *string  `json:"signature"`
-	RecepientChainhainAddress *string  `json:"recepientChainhainAddress"`
-	Value                     *float32 `json:"value"`
+	SenderPublicKey       *string  `json:"senderPublicKey"`
+	SenderChainAddress    *string  `json:"senderChainAddress"`
+	Signature             *string  `json:"signature"`
+	RecepientChainAddress *string  `json:"recepientChainAddress"`
+	Value                 *float32 `json:"value"`
 }
 
 func (tr *TransactionRequest) Validate() bool {
-	return tr.SenderPublicKey != nil && tr.SenderChainAddress != nil && tr.Signature != nil && tr.RecepientChainhainAddress != nil && tr.Value != nil
+	return tr.SenderPublicKey != nil && tr.SenderChainAddress != nil && tr.Signature != nil && tr.RecepientChainAddress != nil && tr.Value != nil
 }
 
 func (tr *TransactionRequest) MarshalJSON() ([]byte, error) {

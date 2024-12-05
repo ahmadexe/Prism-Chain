@@ -1,16 +1,14 @@
 package blockchain
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/ahmadexe/prism_chain/block"
-	"github.com/ahmadexe/prism_chain/data"
 	"github.com/ahmadexe/prism_chain/utils"
 )
 
@@ -21,9 +19,6 @@ func SyncNetwork() *BlockchainMeta {
 	connectToRelayNetwork()
 	connectTopeers()
 	chain := findTheLongestChain()
-	fmt.Println("Synced with the network")
-	fmt.Println("Peers: ", peers)
-	fmt.Println("Blockchain: ", chain)
 	return chain
 }
 
@@ -52,7 +47,7 @@ func connectTopeers() {
 
 		ip := strings.Trim(string(body), "\"")
 
-		if ip != IP && !utils.Contains(peers, ip) {
+		if ip != IP && !utils.Contains(peers, ip) && net.ParseIP(ip) != nil {
 			peers = append(peers, ip)
 		} 
 	}
@@ -145,7 +140,7 @@ func verifyChain(chain *BlockchainMeta) bool {
 	return true
 }
 
-func UpdatePeer(chain *Blockchain) {
+func updatePeer(chain *Blockchain) {
 	chainRaw, err := chain.MarshalJSON()
 	if err != nil {
 		log.Print(err)
@@ -163,48 +158,11 @@ func UpdatePeer(chain *Blockchain) {
 	}
 }
 
-func UpdatePeersMempool(transaction *block.TransactionRequest) {
-	transactionRaw, err := transaction.MarshalJSON()
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	for _, p := range peers {
-		res, err := http.Post("http://"+p+":10111/update/mempool", "application/json", strings.NewReader(string(transactionRaw)))
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		res.Body.Close()
-	}
-}
-
-func UpdatePeersDatapool(data *data.UserData) {
-	dataRaw, err := data.MarshalJSON()
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	for _, p := range peers {
-		res, err := http.Post("http://"+p+":10111/update/datapool", "application/json", strings.NewReader(string(dataRaw)))
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		res.Body.Close()
-	}
-}
-
 func UPDATE() {
-	fmt.Println("Updating peers")
 	repo := GetDatabaseInstance()
 	bc, _ := repo.GetBlockchain()
 
-	UpdatePeer(bc)
+	updatePeer(bc)
 	connectTopeers()
 
 	time.AfterFunc(10*time.Second, UPDATE)

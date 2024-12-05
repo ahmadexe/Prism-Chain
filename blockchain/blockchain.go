@@ -92,18 +92,17 @@ func (bc *Blockchain) createBlock(nonce int, previousHash [32]byte) *block.Block
 }
 
 func (bc *Blockchain) AddTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
-
 	transaction := transaction.NewTransaction(senderChainAddress, recipientChainAddress, value)
 
 	usersBalance := bc.CalculateUserBalance(senderChainAddress)
+
 	repo := GetDatabaseInstance()
 
 	if senderChainAddress == MINING_SENDER {
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
-
 		repo.SaveBlockchain(bc)
 		return true
-	} else if bc.verifyTransaction(senderPublicKey, signature, transaction) && usersBalance >= value {
+	} else if usersBalance >= value {
 		bc.TransactionPool = append(bc.TransactionPool, transaction)
 		repo.SaveBlockchain(bc)
 		return true
@@ -116,27 +115,27 @@ func (bc *Blockchain) AddData(userData *data.UserData) {
 	bc.DataPool = append(bc.DataPool, userData)
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
-
-	UpdatePeersDatapool(userData)
 }
 
 func (bc *Blockchain) CreateTransaction(senderChainAddress string, recipientChainAddress string, value float32, senderPublicKey *ecdsa.PublicKey, signature *utils.Signature) bool {
 	isTransacted := bc.AddTransaction(senderChainAddress, recipientChainAddress, value, senderPublicKey, signature)
 
-	var spk string = utils.PublicKeyToString(senderPublicKey)
-	var sig string = signature.String()
 
-	if isTransacted {
-		transactionReq := &block.TransactionRequest{
-			SenderPublicKey:           &spk,
-			SenderChainAddress:        &senderChainAddress,
-			Signature:                 &sig,
-			RecepientChainhainAddress: &recipientChainAddress,
-			Value:                     &value,
-		}
 
-		UpdatePeersMempool(transactionReq)
-	}
+	// var spk string = utils.PublicKeyToString(senderPublicKey)
+	// var sig string = signature.String()
+
+	// if isTransacted {
+	// 	transactionReq := &block.TransactionRequest{
+	// 		SenderPublicKey:           &spk,
+	// 		SenderChainAddress:        &senderChainAddress,
+	// 		Signature:                 &sig,
+	// 		RecepientChainAddress: &recipientChainAddress,
+	// 		Value:                     &value,
+	// 	}
+
+	// 	UpdatePeersMempool(transactionReq)
+	// }
 
 	return isTransacted
 }
@@ -177,11 +176,8 @@ func (bc *Blockchain) ProofOfWork() int {
 }
 
 func (bc *Blockchain) Mining() bool {
-	fmt.Println(&bc)
-
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
-	fmt.Println(len(bc.TransactionPool))
 	if len(bc.TransactionPool) == 0 {
 		return false
 	}
@@ -197,8 +193,7 @@ func (bc *Blockchain) Mining() bool {
 	repo := GetDatabaseInstance()
 	repo.SaveBlockchain(bc)
 
-	UpdatePeer(bc)
-
+	fmt.Println("Mining is successful!")
 	return true
 }
 
@@ -222,7 +217,7 @@ func (bc *Blockchain) CalculateBalance(address string) float32 {
 	return total
 }
 
-func (bc *Blockchain) verifyTransaction(senderPublicKey *ecdsa.PublicKey, sig *utils.Signature, t *transaction.Transaction) bool {
+func (bc *Blockchain) VerifyTransaction(senderPublicKey *ecdsa.PublicKey, sig *utils.Signature, t *transaction.Transaction) bool {
 	m, _ := json.Marshal(t)
 	hash := sha256.Sum256(m)
 	return ecdsa.Verify(senderPublicKey, hash[:], sig.R, sig.S)

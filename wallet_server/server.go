@@ -29,8 +29,7 @@ func (ws *WalletServer) Port() uint16 {
 	return ws.port
 }
 
-
-// The gateway where the blockchain server is running is passed as a parameter to the wallet server. 
+// The gateway where the blockchain server is running is passed as a parameter to the wallet server.
 // This is because the wallet server needs to know where to send the transaction request and fetch other details.
 func (ws *WalletServer) Gateway() string {
 	return ws.gateway
@@ -61,6 +60,7 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, r *http.Request
 			log.Println("Bad Request")
 			return
 		}
+
 		if !tr.Validate() {
 			w.WriteHeader(http.StatusBadRequest)
 			log.Println("Bad Request")
@@ -77,17 +77,17 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, r *http.Request
 		signatureStr := signature.String()
 
 		bt := &block.TransactionRequest{
-			SenderPublicKey:           tr.SenderPublicKey,
-			SenderChainAddress:        tr.SenderBlockchainAddress,
-			Signature:                 &signatureStr,
-			RecepientChainhainAddress: tr.RecipientBlockchainAddress,
-			Value:                     tr.Value}
+			SenderPublicKey:       tr.SenderPublicKey,
+			SenderChainAddress:    tr.SenderBlockchainAddress,
+			Signature:             &signatureStr,
+			RecepientChainAddress: tr.RecipientBlockchainAddress,
+			Value:                 tr.Value}
 
 		m, _ := json.Marshal(bt)
 		buf := bytes.NewBuffer(m)
-		fmt.Println("http://"+ws.Gateway()+"/transaction")
+		fmt.Println("http://" + ws.Gateway() + "/transactions")
 		resp, err := http.Post("http://"+ws.Gateway()+"/transactions", "application/json", buf)
-		
+
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println("Internal Server Error 1")
