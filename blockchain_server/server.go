@@ -20,6 +20,8 @@ type BlockchainServer struct {
 	port uint16
 }
 
+const REWARD_PERCENTAGE = 5
+
 func (bcs *BlockchainServer) GetBlockchain() *blockchain.Blockchain {
 	repo := blockchain.GetDatabaseInstance()
 	bc, ok := repo.GetBlockchain()
@@ -144,7 +146,21 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 		bc := bcs.GetBlockchain()
 
-		isCreated := bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, *t.Value, publicKey, signature)
+		percentage := (*t.Value * REWARD_PERCENTAGE) / 100
+		actualValue := *t.Value - percentage
+
+		isCreated := bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, actualValue, publicKey, signature)
+
+		for _, b := range bc.Chain {
+			totalDataProviders := len(b.Data)
+			reward := percentage / float32(totalDataProviders)
+
+			for _, d := range b.Data {
+				if d.BlockchainAddress != *t.SenderChainAddress {
+					bc.CreateTransaction(*t.RecepientChainAddress, d.BlockchainAddress, reward, publicKey, signature)
+				}
+			}
+		}
 
 		w.Header().Add("Content-Type", "application/json")
 
@@ -324,9 +340,9 @@ func (bcs *BlockchainServer) AddData(w http.ResponseWriter, r *http.Request) {
 		}
 
 		m, _ := json.Marshal(struct {
-			Data   []*data.UserData `json:"data"`
+			Data []*data.UserData `json:"data"`
 		}{
-			Data:   d,
+			Data: d,
 		})
 
 		w.Header().Add("Content-Type", "application/json")
