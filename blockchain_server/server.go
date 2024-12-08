@@ -316,6 +316,22 @@ func (bcs *BlockchainServer) UpdateDataPool(w http.ResponseWriter, r *http.Reque
 
 func (bcs *BlockchainServer) AddData(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodGet:
+		bc := bcs.GetBlockchain()
+		var d []*data.UserData
+		for _, b := range bc.Chain {
+			d = append(d, b.Data...)
+		}
+
+		m, _ := json.Marshal(struct {
+			Data   []*data.UserData `json:"data"`
+		}{
+			Data:   d,
+		})
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(m)
+
 	case http.MethodPost:
 		decoder := json.NewDecoder(r.Body)
 		var d data.UserData
@@ -359,6 +375,41 @@ func (bcs *BlockchainServer) Join(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (bcs *BlockchainServer) GetAllTransactions(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		bc := bcs.GetBlockchain()
+		blocks := bc.Chain
+
+		var transactions []transaction.Transaction
+
+		for _, b := range blocks {
+			for _, t := range b.Transactions {
+				transactions = append(transactions, *t)
+			}
+		}
+
+		if transactions == nil {
+			transactions = make([]transaction.Transaction, 0)
+		}
+
+		message, _ := json.Marshal(struct {
+			Transactions []transaction.Transaction `json:"transactions"`
+			Length       int                       `json:"length"`
+		}{
+			Transactions: transactions,
+			Length:       len(transactions),
+		})
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(message)
+
+	default:
+		log.Println("Method not allowed")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -372,6 +423,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/update/mempool", bcs.UpdateMempool)
 	http.HandleFunc("/update/datapool", bcs.UpdateDataPool)
 	http.HandleFunc("/join/", bcs.Join)
+	http.HandleFunc("/all_transactions", bcs.GetAllTransactions)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {
