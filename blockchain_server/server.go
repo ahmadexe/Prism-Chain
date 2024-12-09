@@ -146,20 +146,29 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, r *http.Request
 
 		bc := bcs.GetBlockchain()
 
-		percentage := (*t.Value * REWARD_PERCENTAGE) / 100
-		actualValue := *t.Value - percentage
+		var isCreated bool
 
-		isCreated := bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, actualValue, publicKey, signature)
+		if t.Share {
+			percentage := (*t.Value * REWARD_PERCENTAGE) / 100
+			actualValue := *t.Value - percentage
 
-		for _, b := range bc.Chain {
-			totalDataProviders := len(b.Data)
+			isCreated = bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, actualValue, publicKey, signature)
+
+			totalDataProviders := 0
+			for _, b := range bc.Chain {
+				totalDataProviders += len(b.Data)
+			}
+
 			reward := percentage / float32(totalDataProviders)
-
-			for _, d := range b.Data {
-				if d.BlockchainAddress != *t.SenderChainAddress {
-					bc.CreateTransaction(*t.RecepientChainAddress, d.BlockchainAddress, reward, publicKey, signature)
+			for _, b := range bc.Chain {
+				for _, d := range b.Data {
+					if d.BlockchainAddress != *t.SenderChainAddress {
+						bc.CreateTransaction(*t.RecepientChainAddress, d.BlockchainAddress, reward, publicKey, signature)
+					}
 				}
 			}
+		} else {
+			isCreated = bc.CreateTransaction(*t.SenderChainAddress, *t.RecepientChainAddress, *t.Value, publicKey, signature)
 		}
 
 		w.Header().Add("Content-Type", "application/json")

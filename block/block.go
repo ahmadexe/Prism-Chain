@@ -87,6 +87,7 @@ type TransactionRequest struct {
 	Signature             *string  `json:"signature"`
 	RecepientChainAddress *string  `json:"recepientChainAddress"`
 	Value                 *float32 `json:"value"`
+	Share                 bool     `json:"share"`
 }
 
 func (tr *TransactionRequest) Validate() bool {

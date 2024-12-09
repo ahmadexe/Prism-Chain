@@ -81,7 +81,8 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, r *http.Request
 			SenderChainAddress:    tr.SenderBlockchainAddress,
 			Signature:             &signatureStr,
 			RecepientChainAddress: tr.RecipientBlockchainAddress,
-			Value:                 tr.Value}
+			Value:                 tr.Value,
+			Share:                 tr.Share}
 
 		m, _ := json.Marshal(bt)
 		buf := bytes.NewBuffer(m)
@@ -144,8 +145,35 @@ func (ws *WalletServer) WalletAmount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (ws *WalletServer) GenerateWallet(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		w.Header().Add("Content-Type", "application/json")
+
+		var usersWallet *wallet.WalletRequest
+
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&usersWallet)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request")
+			return
+		}
+
+		wlt := wallet.GenerateWallet(usersWallet.PrivateKey, usersWallet.PublicKey)
+
+		m, _ := wlt.MarshalJSON()
+		w.Write(m)
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		log.Println("Method not allowed")
+	}
+}
+
 func (ws *WalletServer) Start() {
 	http.HandleFunc("/wallet", ws.Wallet)
+	http.HandleFunc("/generate/wallet", ws.GenerateWallet)
 	http.HandleFunc("/transaction", ws.CreateTransaction)
 	http.HandleFunc("/wallet/amount", ws.WalletAmount)
 	log.Printf("Wallet server listening on port %v\n", ws.Port())
