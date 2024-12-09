@@ -243,3 +243,7 @@ func (bc *Blockchain) DepositJoiningFee(userAddress string) {
 
 	bc.AddTransaction(MINING_SENDER, userAddress, 10, nil, nil)
 }
+
+func (bc *Blockchain) BuyCoins(userAddress string, value float32) {
+	bc.AddTransaction(MINING_SENDER, userAddress, float32(value - 1), nil, nil)
+}

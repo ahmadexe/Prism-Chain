@@ -435,6 +435,32 @@ func (bcs *BlockchainServer) GetAllTransactions(w http.ResponseWriter, r *http.R
 	}
 }
 
+func (bcs *BlockchainServer) Buy(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		decoder := json.NewDecoder(r.Body)
+		var br blockchain.BuyRequest
+
+		err := decoder.Decode(&br)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println(err)
+			return
+		}
+
+		if !br.Validate() {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request")
+			return
+		}
+
+		bc := bcs.GetBlockchain()
+		bc.BuyCoins(br.RequestAddress, br.Amount)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
@@ -449,6 +475,7 @@ func (bcs *BlockchainServer) Run() {
 	http.HandleFunc("/update/datapool", bcs.UpdateDataPool)
 	http.HandleFunc("/join/", bcs.Join)
 	http.HandleFunc("/all_transactions", bcs.GetAllTransactions)
+	http.HandleFunc("/buy", bcs.Buy)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(bcs.Port())), nil)
 	if err != nil {
