@@ -49,7 +49,7 @@ func connectTopeers() {
 
 		if ip != IP && !utils.Contains(peers, ip) && net.ParseIP(ip) != nil {
 			peers = append(peers, ip)
-		} 
+		}
 	}
 }
 
@@ -162,8 +162,8 @@ func UPDATE() {
 	repo := GetDatabaseInstance()
 	bc, _ := repo.GetBlockchain()
 
-	updatePeer(bc)
 	connectTopeers()
+	updatePeer(bc)
 
 	time.AfterFunc(10*time.Second, UPDATE)
-} 
+}
